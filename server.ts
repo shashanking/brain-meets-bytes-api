@@ -71,7 +71,7 @@ async function connectDB() {
 }
 const start = async () => {
   await connectDB();
-  app.listen(config.serverPort, () => {
+  app.listen(config.serverPort,"0.0.0.0",() => {
     console.log("Server is listening on port", config.serverPort);
   });
 };
