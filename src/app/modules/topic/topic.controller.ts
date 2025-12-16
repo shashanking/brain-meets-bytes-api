@@ -1,60 +1,49 @@
 import { Request, Response } from "express";
-import { userService } from "./user.services";
-import { createHash } from "crypto";
+import { topicService } from "./topic.services";
 
-class UserController {
+class TopicController {
 
-    async createUser(req: Request, res: Response) {
+    async createTopic(req: Request, res: Response) {
         try {
-            const { name, email, password, RoleId, ProfilePic } = req.body;
-
-            if (!name || !email || !password) {
+            const payload = {
+                title: req.body.title,
+                route: req.body.route,
+                isActive: req.body.isActive
+            };
+            if (!payload.title || !payload.route) {
                 return res.status(400).send({
-                    message: "name, email and password are required"
+                    message: "title and route are required"
                 });
             }
 
-            const existing: any = await userService.findByEmail(email);
+            const existing: any = await topicService.findByRoute(payload.route);
             if (existing) {
                 return res.status(409).send({
-                    message: "Email already registered"
+                    message: "route already exists"
                 });
             }
-
-            const hashedPassword = createHash("sha256")
-                .update(password)
-                .digest("hex");
-
-            const user = await userService.saveUserValues({
-                name,
-                email,
-                password: hashedPassword,
-                RoleId,
-                ProfilePic
-            });
-
-            return res.status(201).send(user);
-
+            const Topic = await topicService.saveTopicValues(payload);
+            return res.status(201).send(Topic);
         } catch (err) {
-            console.error("createUser error:", err);
+            console.error("createTopic error:", err);
             return res.status(500).send({
                 message: "Internal server error"
             });
         }
     }
 
-    async updateUser(req: Request, res: Response) {
+    async updateTopic(req: Request, res: Response) {
         try {
-            const userId = req.query.userId;
+            const TopicId = req.query.TopicId;
             const payload = req.body;
 
-            if (!userId) {
+            if (!TopicId) {
                 return res.status(400).send({
-                    message: "userId is required"
+                    message: "TopicId is required"
                 });
             }
 
-            const updated: any = await userService.updateUserValues(userId, payload);
+            const updated: any = await topicService.updateTopicValues(TopicId, payload);
 
             if (!updated.status) {
                 return res.status(404).send({
@@ -65,24 +54,24 @@ class UserController {
             return res.status(200).send(updated);
 
         } catch (err) {
-            console.error("updateUser error:", err);
+            console.error("updateTopic error:", err);
             return res.status(500).send({
                 message: "Internal server error"
             });
         }
     }
 
-    async deleteUser(req: Request, res: Response) {
+    async deleteTopic(req: Request, res: Response) {
         try {
-            const userId = req.query.userId;
+            const TopicId = req.query.TopicId;
 
-            if (!userId) {
+            if (!TopicId) {
                 return res.status(400).send({
-                    message: "userId is required"
+                    message: "TopicId is required"
                 });
             }
 
-            const deleted = await userService.deleteUserByUserId(userId);
+            const deleted = await topicService.deleteTopicByTopicId(TopicId);
 
             if (!deleted.status) {
                 return res.status(404).send({
@@ -93,16 +82,16 @@ class UserController {
             return res.status(200).send(deleted);
 
         } catch (err) {
-            console.error("deleteUser error:", err);
+            console.error("deleteTopic error:", err);
             return res.status(500).send({
                 message: "Internal server error"
             });
         }
     }
 
-    async getUsers(req: Request, res: Response) {
+    async getTopics(req: Request, res: Response) {
         try {
-            const result = await userService.getUsers(req.query);
+            const result = await topicService.getTopics(req.query);
 
             if (!result.status) {
                 return res.status(400).send(result);
@@ -111,26 +100,26 @@ class UserController {
             return res.status(200).send(result);
 
         } catch (err) {
-            console.error("getUsers error:", err);
+            console.error("getTopics error:", err);
             return res.status(500).send({
                 message: "Internal server error"
             });
         }
     }
 
-    async getUser(req: Request, res: Response) {
+    async getTopic(req: Request, res: Response) {
         try {
-            const userId = String(req.query.userId || "");
+            const TopicId = String(req.query.TopicId || "");
 
-            if (!userId) {
+            if (!TopicId) {
                 return res.status(400).send({
                     status: false,
-                    message: "userId is required",
+                    message: "TopicId is required",
                     data: []
                 });
             }
 
-            const result = await userService.getUserByUserId(userId);
+            const result = await topicService.getTopicByTopicId(TopicId);
 
             if (!result.status) {
                 return res.status(404).send(result);
@@ -139,7 +128,7 @@ class UserController {
             return res.status(200).send(result);
 
         } catch (err) {
-            console.error("getUser error:", err);
+            console.error("getTopic error:", err);
             return res.status(500).send({
                 message: "Internal server error"
             });
@@ -147,4 +136,4 @@ class UserController {
     }
 }
 
-export const userController = new UserController();
+export const topicController = new TopicController();

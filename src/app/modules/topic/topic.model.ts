@@ -1,57 +1,56 @@
 import mongoose, { Document, Schema } from "mongoose";
 import Counter from "../core.model";
-export interface IUser extends Document {
+export interface ITopic extends Document {
     _id: mongoose.Types.ObjectId;
-    userId: number;
-    name: string;
-    email: string;
-    password?: string;
-    RoleId?: number;
-    ProfilePic: string;
+    TopicId: number;
+    title: string;
+    route: string;
+    isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
 
-const UserSchema = new Schema<IUser>(
+const TopicSchema = new Schema<ITopic>(
     {
-        userId: {
+        TopicId: {
             type: Number,
             unique: true,
             index: true,
         },
 
-        name: { type: String, required: true, trim: true },
+        title: { type: String, required: true, trim: true },
 
-        email: {
+        route: {
             type: String,
             required: true,
             unique: true,
             trim: true,
             lowercase: true,
         },
-        password: { type: String },
-        RoleId: { type: Number },
-        ProfilePic: { type: String, required: true, trim: true },
+        isActive: {
+            type: Boolean,
+            default: true
+        }
 
     },
     {
-        collection: "users",
+        collection: "topics",
         timestamps: true,
         toJSON: { virtuals: true },
         toObject: { virtuals: true },
     }
 );
 
-UserSchema.pre<IUser>("save", async function () {
+TopicSchema.pre<ITopic>("save", async function () {
     if (this.isNew) {
         const counter = await Counter.findByIdAndUpdate(
-            { _id: "userId" },
+            { _id: "TopicId" },
             { $inc: { seq: 1 } },
             { new: true, upsert: true }
         );
 
-        this.userId = counter.seq;
+        this.TopicId = counter.seq;
     }
 });
-const UserModel = mongoose.model<IUser>("user", UserSchema);
-export default UserModel;
+const TopicModel = mongoose.model<ITopic>("Topic", TopicSchema);
+export default TopicModel;

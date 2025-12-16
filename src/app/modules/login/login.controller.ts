@@ -1,52 +1,45 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import { createJWT, JwtResponse } from "../helper/auth.services";
+import { authService, JwtResponse } from "../helper/auth.services";
 import { userService } from "../user/user.services";
 
 export const login = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body ?? {};
-
         if (!email || !password) {
             return res.status(400).send({ message: "email and password are required" });
         }
-
-        const existing = await userService.findByEmail(email);
+        const existing: any = await userService.findByEmail(email);
         if (!existing) {
             return res.status(401).send({ message: "Invalid email or password" });
         }
-        const storedHash: string | undefined = (existing as any).password;
-        const salt: string | undefined = (existing as any).salt;
-
-        if (!storedHash || !salt) {
-            console.error("User record missing password or salt", existing);
-            return res.status(500).send({ message: "User stored without password/salt" });
-        }
-
-        const hashedInput = crypto.createHmac("sha256", salt).update(password).digest("hex");
-        if (hashedInput !== storedHash) {
+        const sha256Password = crypto.createHash("sha256").update(password).digest("hex");
+        console.log('sha256Password', sha256Password);
+        const a = Buffer.from(sha256Password);
+        const b = Buffer.from(existing.password ?? "");
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
             return res.status(401).send({ message: "Invalid email or password" });
         }
         const payload = {
-            sub: (existing as any)._id,         // mongo id
-            userId: (existing as any).userId,   // optional numeric id
-            email: (existing as any).email,
-            role: (existing as any).role ?? "user",
+            sub: existing._id,
+            userId: existing.userId,
+            email: existing.email,
+            role: existing.role,
         };
-        const jwtResp: JwtResponse<string> = await createJWT(payload);
-
+        const jwtResp: JwtResponse<string> = await authService.createJWT(payload);
         if (!jwtResp.status) {
             console.error("JWT generation failed:", jwtResp.message);
             return res.status(500).send({ message: "Failed to generate token" });
         }
+
         return res.status(200).send({
             message: "Login successful",
-            token: jwtResp.data,
-            user: {
-                id: (existing as any)._id,
-                userId: (existing as any).userId,
-                email: (existing as any).email,
-                role: (existing as any).role,
+            data: {
+                id: existing._id,
+                userId: existing.userId,
+                email: existing.email,
+                role: existing.role,
+                token: jwtResp.data,
             },
         });
     } catch (err: any) {
