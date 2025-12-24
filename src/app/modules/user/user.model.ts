@@ -8,6 +8,8 @@ export interface IUser extends Document {
     password?: string;
     RoleId?: number;
     ProfilePic: string;
+    hasmembership: boolean
+    MembershipId: number
     createdAt: Date;
     updatedAt: Date;
 }
@@ -32,6 +34,8 @@ const UserSchema = new Schema<IUser>(
         password: { type: String },
         RoleId: { type: Number },
         ProfilePic: { type: String, required: true, trim: true },
+        hasmembership: { type: Boolean, required: true },
+        MembershipId: { type: Number, unique: true }
 
     },
     {

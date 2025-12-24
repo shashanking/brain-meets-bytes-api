@@ -337,6 +337,14 @@ class ThreadsService {
         };
     }
 
+    async getreplyComment(ThreadId: number, parentCommentId: number) {
+        const comments = await ThreadCommentModel.find({ ThreadId, parentCommentId })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        return { status: true, message: "Reply Comments fetched", data: comments };
+    }
+
 }
 
 export const threadsService = new ThreadsService();

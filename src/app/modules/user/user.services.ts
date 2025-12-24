@@ -102,7 +102,8 @@ class UserService {
                 sort = "-createdAt",
                 searchField,
                 searchValue,
-                filter
+                filter,
+                MembershipId
             } = query;
 
             const pageNum = Number(page) > 0 ? Number(page) : 1;
@@ -123,7 +124,6 @@ class UserService {
                 } catch { }
             }
 
-            // Add remaining filters
             const reserved = [
                 "page",
                 "limit",
@@ -131,13 +131,13 @@ class UserService {
                 "searchField",
                 "searchValue",
                 "filter",
-                "userId"
+                "userId",
+                "MembershipId"
             ];
 
             Object.keys(query || {}).forEach((k) => {
                 if (reserved.includes(k)) return;
                 if (filterObj[k] !== undefined) return;
-
                 filterObj[k] = tryNumber(query[k]);
             });
 
@@ -148,13 +148,51 @@ class UserService {
                     $options: "i"
                 };
             }
+            if (MembershipId) {
+                filterObj.MembershipId = tryNumber(MembershipId);
+            }
 
+            const pipeline: any[] = [
+                { $match: filterObj },
+                {
+                    $lookup: {
+                        from: "memberships",
+                        localField: "MembershipId",
+                        foreignField: "MembershipId",
+                        as: "membership"
+                    }
+                },
+                {
+                    $addFields: {
+                        membership: {
+                            $cond: {
+                                if: { $eq: ["$hasmembership", true] },
+                                then: "$membership",
+                                else: []
+                            }
+                        }
+                    }
+                },
+
+                {
+                    $project: {
+                        password: 0
+                    }
+                },
+
+                {
+                    $sort:
+                        typeof sort === "string" && sort.startsWith("-")
+                            ? { [sort.substring(1)]: -1 }
+                            : { [sort]: 1 }
+                },
+
+                { $skip: skip },
+                { $limit: limitNum }
+            ];
+
+            const data = await UserModel.aggregate(pipeline);
             const totalCounts = await UserModel.countDocuments(filterObj);
-            const results = await UserModel.find(filterObj)
-                .sort(sort)
-                .skip(skip)
-                .limit(limitNum)
-                .lean();
 
             return {
                 status: true,
@@ -163,10 +201,11 @@ class UserService {
                     total: totalCounts,
                     page: pageNum,
                     limit: limitNum,
-                    totalPages: Math.ceil(totalCounts / limitNum) || 0,
-                    data: results
-                }
+                    totalPages: Math.ceil(totalCounts / limitNum) || 0
+                },
+                data
             };
+
         } catch (error: any) {
             return {
                 status: false,
@@ -175,6 +214,8 @@ class UserService {
             };
         }
     }
+
+
 
     async getUserByUserId(userId: string) {
         try {

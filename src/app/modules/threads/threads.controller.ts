@@ -76,6 +76,14 @@ class ThreadController {
         return res.status(result.status ? 201 : 400).send(result);
     };
 
+    getreplyComments = async (req: Request, res: Response) => {
+        const ThreadId = Number(req.query.ThreadId);
+        const parentCommentId = Number(req.query.parentCommentId)
+
+        const result = await threadsService.getreplyComment(ThreadId, parentCommentId);
+        return res.status(200).send(result);
+    };
+
 
 }
 

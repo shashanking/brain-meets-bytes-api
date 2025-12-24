@@ -7,6 +7,7 @@ import roleRoutes from "./role/role.routes";
 import categoryRoutes from "./category/category.routes";
 import threadsRoutes from "./threads/threads.routes"
 import topicsRoutes from "./topic/topic.routes"
+import membershipRoutes from "./membership/membership.routes";
 const router = Router();
 
 const authService = new AuthService();
@@ -17,6 +18,7 @@ router.use("/roles", authMiddleware, roleRoutes);
 router.use("/category", authMiddleware, categoryRoutes);
 router.use("/threads", authMiddleware, threadsRoutes);
 router.use("/topics", authMiddleware, topicsRoutes);
+router.use("/membership", authMiddleware, membershipRoutes);
 router.use("/login", loginRoutes);
 
 export default router;

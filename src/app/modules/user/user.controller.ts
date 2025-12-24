@@ -6,8 +6,7 @@ class UserController {
 
     async createUser(req: Request, res: Response) {
         try {
-            const { name, email, password, RoleId, ProfilePic } = req.body;
-
+            const { name, email, password, RoleId, ProfilePic, hasmembership, MembershipId } = req.body;
             if (!name || !email || !password) {
                 return res.status(400).send({
                     message: "name, email and password are required"
@@ -30,7 +29,9 @@ class UserController {
                 email,
                 password: hashedPassword,
                 RoleId,
-                ProfilePic
+                ProfilePic,
+                hasmembership,
+                MembershipId,
             });
 
             return res.status(201).send(user);
