@@ -10,9 +10,6 @@ const tryNumber = (val: any) => {
 
 class MembershipService {
 
-  /* =========================
-     CREATE MEMBERSHIP PLAN
-  ========================= */
 
   async createMembership(payload: Partial<IMembership>) {
     try {
@@ -32,10 +29,6 @@ class MembershipService {
       };
     }
   }
-
-  /* =========================
-     UPDATE MEMBERSHIP PLAN
-  ========================= */
 
   async updateMembership(MembershipId: any, payload: Partial<IMembership>) {
     try {
@@ -81,10 +74,6 @@ class MembershipService {
     }
   }
 
-  /* =========================
-     DELETE MEMBERSHIP PLAN
-  ========================= */
-
   async deleteMembership(MembershipId: any) {
     try {
       if (MembershipId === undefined || MembershipId === null) {
@@ -126,10 +115,6 @@ class MembershipService {
       };
     }
   }
-
-  /* =========================
-     GET ALL MEMBERSHIPS
-  ========================= */
 
   async getMemberships(query: any) {
     try {
@@ -215,11 +200,7 @@ class MembershipService {
       };
     }
   }
-
-  /* =========================
-     GET MEMBERSHIP BY ID
-  ========================= */
-
+  
   async getMembershipById(MembershipId: string) {
     try {
       if (!MembershipId) {

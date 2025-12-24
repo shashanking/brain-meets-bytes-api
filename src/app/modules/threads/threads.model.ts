@@ -1,10 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import Counter from "../core.model";
 
-/* =========================
-   THREAD
-========================= */
-
 export interface IThread extends Document {
   ThreadId: number;
   title: string;
@@ -43,9 +39,6 @@ ThreadSchema.pre<IThread>("save", async function () {
   }
 });
 
-/* =========================
-   THREAD LIKE
-========================= */
 
 export interface IThreadLike extends Document {
   ThreadId: number;
