@@ -14,6 +14,9 @@ router.post("/comments", threadController.addComment.bind(threadController));
 router.get("/comments", threadController.getComments.bind(threadController));
 router.post("/comments/reply", threadController.replyComment.bind(threadController));
 router.get("/comments/reply", threadController.getreplyComments.bind(threadController));
+router.post("/comments/like", threadController.likeComment.bind(threadController));
+router.get("/comments/like", threadController.getCommentswithlike.bind(threadController));
+
 
 
 export default router;

@@ -3,7 +3,8 @@ import {
     ThreadModel,
     ThreadLikeModel,
     ThreadCommentModel,
-    IThread
+    IThread,
+    CommentLikeModel
 } from "./threads.model";
 
 
@@ -292,6 +293,103 @@ class ThreadsService {
             .lean();
 
         return { status: true, message: "Comments fetched", data: comments };
+    }
+
+    async toggleCommentLike(
+        ThreadId: number,
+        CommentId: number,
+        userId: number
+    ) {
+        const existing = await CommentLikeModel.findOne({
+            ThreadId,
+            CommentId,
+            userId
+        });
+
+        if (existing) {
+            await CommentLikeModel.deleteOne({
+                ThreadId,
+                CommentId,
+                userId
+            });
+
+            await ThreadCommentModel.updateOne(
+                { CommentId },
+                { $inc: { likes: -1 } }
+            );
+
+            return { status: true, message: "comment unliked" };
+        }
+
+        await CommentLikeModel.create({
+            ThreadId,
+            CommentId,
+            userId
+        });
+
+        await ThreadCommentModel.updateOne(
+            { CommentId },
+            { $inc: { likes: 1 } }
+        );
+
+        return { status: true, message: "comment liked" };
+    }
+
+    async getThreadComments(
+        ThreadId: number,
+        userId?: number
+    ) {
+        const comments = await ThreadCommentModel.aggregate([
+            {
+                $match: { ThreadId }
+            },
+            {
+                $lookup: {
+                    from: "commentlikes",
+                    let: { commentId: "$CommentId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$CommentId", "$$commentId"] }
+                            }
+                        }
+                    ],
+                    as: "likesData"
+                }
+            },
+            {
+                $addFields: {
+                    likes: { $size: "$likesData" },
+                    isLikedByMe: userId
+                        ? {
+                            $in: [userId, "$likesData.userId"]
+                        }
+                        : false
+                }
+            },
+            {
+                $project: {
+                    likesData: 0
+                }
+            },
+
+            { $sort: { createdAt: 1 } }
+        ]);
+        const map = new Map<number, any>();
+        const roots: any[] = [];
+        comments.forEach(c => {
+            c.replies = [];
+            map.set(c.CommentId, c);
+        });
+        comments.forEach(c => {
+            if (c.parentCommentId) {
+                map.get(c.parentCommentId)?.replies.push(c);
+            } else {
+                roots.push(c);
+            }
+        });
+
+        return roots;
     }
 
     async replyComment(

@@ -13,7 +13,7 @@ const router = Router();
 const authService = new AuthService();
 const authMiddleware = createAuthMiddleware(authService);
 
-router.use("/users", authMiddleware, userRoutes);
+router.use("/users", userRoutes);
 router.use("/roles", authMiddleware, roleRoutes);
 router.use("/category", authMiddleware, categoryRoutes);
 router.use("/threads", authMiddleware, threadsRoutes);

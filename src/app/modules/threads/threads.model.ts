@@ -70,6 +70,7 @@ export interface IThreadComment extends Document {
   comments: string;
   parentCommentId?: number;
   level: number;
+  likes: number;
   createdAt: Date;
 }
 
@@ -80,7 +81,8 @@ const ThreadCommentSchema = new Schema<IThreadComment>(
     userId: { type: Number, required: true },
     comments: { type: String, required: true },
     parentCommentId: { type: Number, default: null },
-    level: { type: Number, default: 0 } 
+    level: { type: Number, default: 0 },
+    likes: { type: Number, default: 0 }
   },
   { timestamps: true }
 );
@@ -95,6 +97,31 @@ ThreadCommentSchema.pre<IThreadComment>("save", async function () {
     this.CommentId = counter.seq;
   }
 });
+
+/* =========================
+   COMMENT LIKE
+========================= */
+
+export interface ICommentLike extends Document {
+  CommentId: number;
+  ThreadId: number;
+  userId: number;
+  createdAt: Date;
+}
+
+const CommentLikeSchema = new Schema<ICommentLike>(
+  {
+    CommentId: { type: Number, required: true, index: true },
+    ThreadId: { type: Number, required: true, index: true },
+    userId: { type: Number, required: true }
+  },
+  { timestamps: true }
+);
+
+CommentLikeSchema.index(
+  { CommentId: 1, userId: 1 },
+  { unique: true }
+);
 
 /* =========================
    EXPORT MODELS
@@ -113,4 +140,9 @@ export const ThreadLikeModel = mongoose.model<IThreadLike>(
 export const ThreadCommentModel = mongoose.model<IThreadComment>(
   "ThreadComment",
   ThreadCommentSchema
+);
+
+export const CommentLikeModel = mongoose.model<ICommentLike>(
+  "CommentLike",
+  CommentLikeSchema
 );

@@ -46,6 +46,59 @@ class ThreadController {
         return res.status(201).send(result);
     };
 
+    likeComment = async (req: Request, res: Response) => {
+        try {
+            const ThreadId = Number(req.query.ThreadId);
+            const CommentId = Number(req.query.CommentId);
+            const { userId } = req.body;
+            console.log(req.body);
+            console.log(ThreadId, CommentId);
+
+            if (!ThreadId || !CommentId || !userId) {
+                return res.status(400).send({
+                    message: "ThreadId, CommentId and userId are required"
+                });
+            }
+
+            const result = await threadsService.toggleCommentLike(
+                ThreadId,
+                CommentId,
+                userId
+            );
+
+            return res.status(200).send(result);
+        } catch (error) {
+            return res.status(500).send({ message: "Internal server error" });
+        }
+    };
+
+    getCommentswithlike = async (req: Request, res: Response) => {
+        try {
+            const ThreadId = Number(req.query.ThreadId);
+            const userId = req.query.userId
+                ? Number(req.query.userId)
+                : undefined;
+
+            if (!ThreadId) {
+                return res.status(400).send({
+                    message: "ThreadId is required"
+                });
+            }
+
+            const data = await threadsService.getThreadComments(
+                ThreadId,
+                userId
+            );
+
+            return res.status(200).send({
+                status: true,
+                data
+            });
+        } catch (err) {
+            return res.status(500).send({ message: "Internal server error" });
+        }
+    };
+
     getComments = async (req: Request, res: Response) => {
         const ThreadId = Number(req.query.ThreadId);
 
