@@ -8,7 +8,8 @@ class CategoryController {
             title: req.body.title,
             route: req.body.route,
             description: req.body.description,
-            color: req.body.color
+            color: req.body.color,
+            image: req.body.image
         };
         if (!payload.title) {
             return res.status(400).send({ message: "Category Categoryname is required" });

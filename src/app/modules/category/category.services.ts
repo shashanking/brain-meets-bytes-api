@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import CategoryModel, { ICategory } from "./category.model";
+import { PipelineStage } from "mongoose";
 
 const tryNumber = (val: any) => {
     if (typeof val !== "string") return val;
@@ -89,36 +90,70 @@ class CategoryService {
 
     async getCategories(query: any) {
         try {
-            const {
-                page = 1,
-                limit = 10,
-                search
-            } = query;
+            const { page = 1, limit = 10, search } = query;
 
             const pageNum = Number(page);
             const limitNum = Number(limit);
             const skip = (pageNum - 1) * limitNum;
 
-            let filter: any = {};
-
+            const matchStage: any = {};
             if (search) {
-                filter.$or = [
+                matchStage.$or = [
                     { title: { $regex: search, $options: "i" } },
-                    { slug: { $regex: search, $options: "i" } }
+                    { route: { $regex: search, $options: "i" } }
                 ];
             }
 
-            const total = await CategoryModel.countDocuments(filter);
+            const pipeline: PipelineStage[] = [
+                { $match: matchStage },
 
-            const data = await CategoryModel.find(filter)
-                .sort({ CategoryId: 1 })
-                .skip(skip)
-                .limit(limitNum)
-                .lean();
+                {
+                    $lookup: {
+                        from: "threads", // collection name
+                        let: { categoryId: "$CategoryId" },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        // ✅ CORRECT MATCH
+                                        $in: [
+                                            "$$categoryId",
+                                            { $ifNull: ["$CategoryId", []] }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: "threads"
+                    }
+                },
+
+                {
+                    $addFields: {
+                        threadCount: { $size: "$threads" }
+                    }
+                },
+
+                {
+                    $project: {
+                        threads: 0
+                    }
+                },
+
+                {
+                    $sort: { threadCount: -1 }
+                },
+
+                { $skip: skip },
+                { $limit: limitNum }
+            ];
+
+            const data = await CategoryModel.aggregate(pipeline);
+            const total = await CategoryModel.countDocuments(matchStage);
 
             return {
                 status: true,
-                message: "Categories fetched",
+                message: "Top categories fetched",
                 meta: {
                     total,
                     page: pageNum,
@@ -127,7 +162,9 @@ class CategoryService {
                 },
                 data
             };
+
         } catch (error: any) {
+            console.error(error);
             return {
                 status: false,
                 message: error.message,
@@ -135,6 +172,7 @@ class CategoryService {
             };
         }
     }
+
 
     async getCategoryById(CategoryId: string) {
         try {

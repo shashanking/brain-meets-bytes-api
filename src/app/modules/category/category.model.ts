@@ -7,6 +7,7 @@ export interface ICategory extends Document {
   title: string;
   route: string;
   description?: string;
+  image?: string
   color?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,10 @@ const CategorySchema = new Schema<ICategory>(
     description: {
       type: String,
       trim: true
+    },
+    
+    image: {
+      type: String,
     },
 
     color: {
