@@ -7,6 +7,7 @@ export interface IThread extends Document {
   content: string;
   CategoryId: number[];
   images?: string[];
+  videos?: string[]
   userId: number;
   likes: number;
   commentsCount: number;
@@ -21,6 +22,7 @@ const ThreadSchema = new Schema<IThread>(
     content: { type: String, required: true },
     CategoryId: { type: [Number], index: true },
     images: [String],
+    videos: [String],
     userId: { type: Number, required: true, index: true },
     likes: { type: Number, default: 0 },
     commentsCount: { type: Number, default: 0 }
