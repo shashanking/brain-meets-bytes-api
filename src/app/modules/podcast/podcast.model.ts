@@ -90,10 +90,6 @@ export const PodcastReactionModel = mongoose.model<IPodcastReaction>(
   PodcastReactionSchema
 );
 
-/* =========================
-   PODCAST COMMENT
-========================= */
-
 export interface IPodcastComment extends Document {
   CommentId: number;
   sanityPodcastId: string;
@@ -163,7 +159,6 @@ const PodcastCommentSchema = new Schema<IPodcastComment>(
   { timestamps: true }
 );
 
-// 🔢 Auto increment CommentId
 PodcastCommentSchema.pre<IPodcastComment>("save", async function () {
   if (this.isNew) {
     const counter = await Counter.findByIdAndUpdate(
@@ -179,10 +174,6 @@ export const PodcastCommentModel = mongoose.model<IPodcastComment>(
   "PodcastComment",
   PodcastCommentSchema
 );
-
-/* =========================
-   PODCAST COMMENT LIKE
-========================= */
 
 export interface IPodcastCommentLike extends Document {
   CommentId: number;
@@ -207,8 +198,6 @@ const PodcastCommentLikeSchema = new Schema<IPodcastCommentLike>(
   },
   { timestamps: true }
 );
-
-// 🔐 One like per user per comment
 PodcastCommentLikeSchema.index(
   { CommentId: 1, userId: 1 },
   { unique: true }
@@ -219,3 +208,24 @@ export const PodcastCommentLikeModel =
     "PodcastCommentLike",
     PodcastCommentLikeSchema
   );
+
+export interface ISavedPodcast extends Document {
+  PodcastId: number;
+  userId: number;
+  createdAt: Date;
+}
+
+const SavedPodcastSchema = new Schema<ISavedPodcast>(
+  {
+    PodcastId: { type: Number, required: true, index: true },
+    userId: { type: Number, required: true, index: true }
+  },
+  { timestamps: true }
+);
+
+SavedPodcastSchema.index({ PodcastId: 1, userId: 1 }, { unique: true });
+
+export const SavedPodcastModel = mongoose.model<ISavedPodcast>(
+  "SavedPodcasts",
+  SavedPodcastSchema
+);

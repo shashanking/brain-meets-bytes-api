@@ -83,29 +83,35 @@ class ArticleService {
             { _id: 0, ArticleId: 1, name: 1, likeCount: 1, dislikeCount: 1 }
         );
 
-        if (!article || (article.likeCount === 0 && article.dislikeCount === 0)) {
+        if (!article) {
             return null;
         }
-
         let userReaction: "like" | "dislike" | null = null;
-
         if (userId) {
             const reaction = await ArticleReactionModel.findOne({
                 ArticleId: article.ArticleId,
                 userId
             });
-
             userReaction = reaction ? reaction.reaction : null;
         }
+        const likedUsers = await ArticleReactionModel.find(
+            {
+                ArticleId: article.ArticleId,
+                reaction: "like"
+            },
+            { _id: 0, userId: 1 }
+        );
 
         return {
             sanityArticleId,
             name: article.name,
             likeCount: article.likeCount,
             dislikeCount: article.dislikeCount,
-            userReaction
+            userReaction,
+            usersWhoLiked: likedUsers.map(u => u.userId)
         };
     }
+
 
     async addArticleComment(
         sanityArticleId: string,

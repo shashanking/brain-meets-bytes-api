@@ -11,6 +11,7 @@ export interface IThread extends Document {
   userId: number;
   likes: number;
   commentsCount: number;
+  reportsCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,7 +26,9 @@ const ThreadSchema = new Schema<IThread>(
     videos: [String],
     userId: { type: Number, required: true, index: true },
     likes: { type: Number, default: 0 },
-    commentsCount: { type: Number, default: 0 }
+    commentsCount: { type: Number, default: 0 },
+    reportsCount: { type: Number, default: 0 }
+
   },
   { timestamps: true }
 );
@@ -60,10 +63,6 @@ ThreadLikeSchema.index(
   { ThreadId: 1, userId: 1 },
   { unique: true }
 );
-
-/* =========================
-   THREAD COMMENT
-========================= */
 
 export interface IThreadComment extends Document {
   CommentId: number;
@@ -100,10 +99,6 @@ ThreadCommentSchema.pre<IThreadComment>("save", async function () {
   }
 });
 
-/* =========================
-   COMMENT LIKE
-========================= */
-
 export interface ICommentLike extends Document {
   CommentId: number;
   ThreadId: number;
@@ -125,9 +120,38 @@ CommentLikeSchema.index(
   { unique: true }
 );
 
-/* =========================
-   EXPORT MODELS
-========================= */
+export interface IThreadReport extends Document {
+  ThreadId: number;
+  userId: number;
+  reason: string;
+}
+
+const ThreadReportSchema = new Schema<IThreadReport>(
+  {
+    ThreadId: { type: Number, required: true, index: true },
+    userId: { type: Number, required: true },
+    reason: { type: String, required: true, maxlength: 500 }
+  },
+  { timestamps: true }
+);
+
+ThreadReportSchema.index({ ThreadId: 1, userId: 1 }, { unique: true });
+
+export interface ISavedThread extends Document {
+  ThreadId: number;
+  userId: number;
+  createdAt: Date;
+}
+
+const SavedThreadSchema = new Schema<ISavedThread>(
+  {
+    ThreadId: { type: Number, required: true, index: true },
+    userId: { type: Number, required: true, index: true }
+  },
+  { timestamps: true }
+);
+
+SavedThreadSchema.index({ ThreadId: 1, userId: 1 }, { unique: true });
 
 export const ThreadModel = mongoose.model<IThread>(
   "Threads",
@@ -147,4 +171,11 @@ export const ThreadCommentModel = mongoose.model<IThreadComment>(
 export const CommentLikeModel = mongoose.model<ICommentLike>(
   "CommentLike",
   CommentLikeSchema
+);
+
+export const ThreadReportModel = mongoose.model<IThreadReport>("ThreadReports", ThreadReportSchema);
+
+export const SavedThreadModel = mongoose.model<ISavedThread>(
+  "SavedThreads",
+  SavedThreadSchema
 );

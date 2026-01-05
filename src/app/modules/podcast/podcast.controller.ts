@@ -127,7 +127,7 @@ class PodcastController {
             return res.status(200).send(result);
         } catch (error) {
             console.log(error);
-            
+
             return res.status(500).send({
                 status: false,
                 message: "Internal server error"
@@ -196,6 +196,65 @@ class PodcastController {
             });
         }
     }
+
+    savePodcast = async (req: Request, res: Response) => {
+        const PodcastId = Number(req.body.PodcastId);
+        const userId = (req as any).user?.userId;
+        if (!PodcastId) {
+            return res.status(400).send({
+                message: "PodcastId is required"
+            });
+        }
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+        const result = await podcastService.toggleSavePodcast(
+            PodcastId,
+            userId
+        );
+        return res.status(result.status ? 200 : 400).send(result);
+    };
+
+    getSavedUsersForPodcast = async (req: Request, res: Response) => {
+        const PodcastId = Number(req.query.PodcastId);
+        const userId = (req as any).user?.userId;
+        if (!PodcastId) {
+            return res.status(400).send({
+                message: "PodcastId is required"
+            });
+        }
+
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+
+        const result = await podcastService.getSavedUsersForMyPodcast(
+            PodcastId,
+            userId,
+            req.query
+        );
+
+        return res.status(result.status ? 200 : 403).send(result);
+    };
+
+    getMySavedPodcasts = async (req: Request, res: Response) => {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+        const result = await podcastService.getMySavedPodcasts(
+            userId,
+            req.query
+        );
+
+        return res.status(200).send(result);
+    };
 
 }
 

@@ -9,9 +9,8 @@ router.post("/comments", podcastController.addComment.bind(podcastController));
 router.get("/comments", podcastController.getComments.bind(podcastController));
 router.post("/comments/like", podcastController.likeComment.bind(podcastController));
 router.get("/comments/count", podcastController.getCommentReactionCount.bind(podcastController));
-// router.post("/comments/like", podcastController.likeComment.bind(podcastController));
-// router.get("/comments/like", podcastController.getCommentswithlike.bind(podcastController));
-
-
+router.get("/getSavedUsersFrPodcast", podcastController.getSavedUsersForPodcast.bind(podcastController));
+router.post("/save", podcastController.savePodcast.bind(podcastController));
+router.get("/getMySavedPodcasts", podcastController.getMySavedPodcasts.bind(podcastController));
 
 export default router;

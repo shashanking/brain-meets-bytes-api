@@ -16,6 +16,11 @@ router.post("/comments/reply", threadController.replyComment.bind(threadControll
 router.get("/comments/reply", threadController.getreplyComments.bind(threadController));
 router.post("/comments/like", threadController.likeComment.bind(threadController));
 router.get("/comments/like", threadController.getCommentswithlike.bind(threadController));
+router.post("/report", threadController.report.bind(threadController));
+router.get("/getReports", threadController.getReports.bind(threadController));
+router.get("/getSavedUsersFrThread", threadController.getSavedUsersForThread.bind(threadController));
+router.post("/save", threadController.saveThread.bind(threadController));
+router.get("/getMySavedThreads", threadController.getMySavedThreads.bind(threadController));
 
 
 

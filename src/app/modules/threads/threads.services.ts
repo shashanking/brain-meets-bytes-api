@@ -4,9 +4,20 @@ import {
     ThreadLikeModel,
     ThreadCommentModel,
     IThread,
-    CommentLikeModel
+    CommentLikeModel,
+    ThreadReportModel,
+    SavedThreadModel
 } from "./threads.model";
 
+const REPORT_REASONS = [
+    "spam",
+    "abuse",
+    "hate_speech",
+    "misinformation",
+    "sexual_content",
+    "violence",
+    "other"
+];
 
 const tryNumber = (val: any) =>
     typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
@@ -44,30 +55,26 @@ class ThreadsService {
     }
 
     async getThreads(query: any) {
-        const { page = 1, limit = 10, search, CategoryId, userId } = query;
-        const skip = (page - 1) * limit;
+        const { page = 1, limit = 10, search } = query;
+        const filter: any = {};
 
-        let filter: any = {};
-        if (search)
+        if (search) {
             filter.$or = [
-                { title: { $regex: search, $options: "i" } },
-                { content: { $regex: search, $options: "i" } }
+                { title: new RegExp(search, "i") },
+                { content: new RegExp(search, "i") }
             ];
-
-        if (CategoryId) filter.CategoryId = tryNumber(CategoryId);
-        if (userId) filter.userId = tryNumber(userId);
+        }
 
         const total = await ThreadModel.countDocuments(filter);
         const data = await ThreadModel.find(filter)
             .sort({ createdAt: -1 })
-            .skip(skip)
+            .skip((page - 1) * limit)
             .limit(Number(limit))
             .lean();
 
         return {
             status: true,
-            message: "Threads fetched",
-            meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+            meta: { total, page, limit },
             data
         };
     }
@@ -441,6 +448,247 @@ class ThreadsService {
             .lean();
 
         return { status: true, message: "Reply Comments fetched", data: comments };
+    }
+
+    async reportThread(ThreadId: number, userId: number, reason: string) {
+        if (!REPORT_REASONS.includes(reason)) {
+            return {
+                status: false,
+                message: "Invalid report reason"
+            };
+        }
+
+        try {
+            await ThreadReportModel.create({ ThreadId, userId, reason });
+            await ThreadModel.updateOne(
+                { ThreadId },
+                { $inc: { reportsCount: 1 } }
+            );
+
+            return {
+                status: true,
+                message: "Thread reported successfully"
+            };
+        } catch (err: any) {
+            if (err.code === 11000) {
+                return {
+                    status: false,
+                    message: "You already reported this thread"
+                };
+            }
+            throw err;
+        }
+    }
+
+    async getReportedThreads(query: any) {
+        const { page = 1, limit = 10, ThreadId } = query;
+
+        const filter: any = {};
+        if (ThreadId) {
+            filter.ThreadId = Number(ThreadId);
+        }
+
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const data = await ThreadReportModel.aggregate([
+            { $match: filter },
+
+            {
+                $lookup: {
+                    from: "threads",
+                    localField: "ThreadId",
+                    foreignField: "ThreadId",
+                    as: "thread"
+                }
+            },
+            { $unwind: "$thread" },
+
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "userId",
+                    as: "reportedBy"
+                }
+            },
+            { $unwind: "$reportedBy" },
+
+            {
+                $project: {
+                    _id: 0,
+                    ThreadId: 1,
+                    reason: 1,
+                    createdAt: 1,
+                    "thread.title": 1,
+                    "thread.content": 1,
+                    "thread.reportsCount": 1,
+                    reportedBy: {
+                        userId: "$reportedBy.userId",
+                        name: "$reportedBy.name",
+                        email: "$reportedBy.email"
+                    }
+                }
+            },
+
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) }
+        ]);
+
+        const total = await ThreadReportModel.countDocuments(filter);
+
+        return {
+            status: true,
+            message: "Reported threads fetched",
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit)
+            },
+            data
+        };
+    }
+
+    async toggleSaveThread(ThreadId: number, userId: number) {
+        const existing = await SavedThreadModel.findOne({
+            ThreadId,
+            userId
+        });
+        if (existing) {
+            await SavedThreadModel.deleteOne({
+                ThreadId,
+                userId
+            });
+            return {
+                status: true,
+                message: "Thread unsaved"
+            };
+        }
+        const threadExists = await ThreadModel.exists({ ThreadId });
+        if (!threadExists) {
+            return {
+                status: false,
+                message: "Thread not found"
+            };
+        }
+        await SavedThreadModel.create({
+            ThreadId,
+            userId
+        });
+        return {
+            status: true,
+            message: "Thread saved"
+        };
+    }
+
+    async getMySavedThreads(userId: number, query: any) {
+        const { page = 1, limit = 10 } = query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const data = await SavedThreadModel.aggregate([
+            { $match: { userId } },
+            {
+                $lookup: {
+                    from: "threads",
+                    localField: "ThreadId",
+                    foreignField: "ThreadId",
+                    as: "thread"
+                }
+            },
+            { $unwind: "$thread" },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+                $project: {
+                    _id: 0,
+                    ThreadId: 1,
+                    savedAt: "$createdAt",
+                    thread: {
+                        ThreadId: "$thread.ThreadId",
+                        title: "$thread.title",
+                        content: "$thread.content",
+                        images: "$thread.images",
+                        likes: "$thread.likes",
+                        commentsCount: "$thread.commentsCount",
+                        createdAt: "$thread.createdAt"
+                    }
+                }
+            }
+        ]);
+        const total = await SavedThreadModel.countDocuments({ userId });
+        return {
+            status: true,
+            message: "Saved threads fetched",
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit)
+            },
+            data
+        };
+    }
+
+    async getSavedUsersForMyThread(
+        ThreadId: number,
+        userId: number,
+        query: any
+    ) {
+        const { page = 1, limit = 10 } = query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const thread = await ThreadModel.findOne({
+            ThreadId,
+            userId
+        }).lean();
+
+        if (!thread) {
+            return {
+                status: false,
+                message: "Unauthorized: You are not the creator of this thread"
+            };
+        }
+        const data = await SavedThreadModel.aggregate([
+            { $match: { ThreadId } },
+
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "userId",
+                    as: "savedBy"
+                }
+            },
+            { $unwind: "$savedBy" },
+
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+                $project: {
+                    _id: 0,
+                    savedAt: "$createdAt",
+                    savedBy: {
+                        userId: "$savedBy.userId",
+                        name: "$savedBy.name",
+                        email: "$savedBy.email",
+                        ProfilePic: "$savedBy.ProfilePic"
+                    }
+                }
+            }
+        ]);
+        const total = await SavedThreadModel.countDocuments({ ThreadId });
+        return {
+            status: true,
+            message: "Saved users fetched",
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / limit)
+            },
+            data
+        };
     }
 
 }

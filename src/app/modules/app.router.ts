@@ -10,6 +10,7 @@ import topicsRoutes from "./topic/topic.routes"
 import membershipRoutes from "./membership/membership.routes";
 import podcastRoutes from "./podcast/podcast.routes";
 import articleRoutes from "./article/article.routes";
+import pollsRoutes from "./polls/polls.routes";
 const router = Router();
 
 const authService = new AuthService();
@@ -23,6 +24,8 @@ router.use("/topics", authMiddleware, topicsRoutes);
 router.use("/membership", authMiddleware, membershipRoutes);
 router.use("/podcasts", authMiddleware, podcastRoutes);
 router.use("/articles", authMiddleware, articleRoutes);
+router.use("/polls", authMiddleware, pollsRoutes);
+
 router.use("/login", loginRoutes);
 
 export default router;
