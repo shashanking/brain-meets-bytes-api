@@ -210,20 +210,23 @@ export const PodcastCommentLikeModel =
   );
 
 export interface ISavedPodcast extends Document {
-  PodcastId: number;
+  sanityPodcastId: string;
   userId: number;
   createdAt: Date;
 }
 
 const SavedPodcastSchema = new Schema<ISavedPodcast>(
   {
-    PodcastId: { type: Number, required: true, index: true },
+    sanityPodcastId: { type: String, required: true, index: true },
     userId: { type: Number, required: true, index: true }
   },
   { timestamps: true }
 );
 
-SavedPodcastSchema.index({ PodcastId: 1, userId: 1 }, { unique: true });
+SavedPodcastSchema.index(
+  { sanityPodcastId: 1, userId: 1 },
+  { unique: true }
+);
 
 export const SavedPodcastModel = mongoose.model<ISavedPodcast>(
   "SavedPodcasts",

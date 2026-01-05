@@ -198,11 +198,11 @@ class PodcastController {
     }
 
     savePodcast = async (req: Request, res: Response) => {
-        const PodcastId = Number(req.body.PodcastId);
+        const sanityPodcastId = (req.body.sanityPodcastId);
         const userId = (req as any).user?.userId;
-        if (!PodcastId) {
+        if (!sanityPodcastId) {
             return res.status(400).send({
-                message: "PodcastId is required"
+                message: "sanityPodcastId is required"
             });
         }
         if (!userId) {
@@ -211,18 +211,18 @@ class PodcastController {
             });
         }
         const result = await podcastService.toggleSavePodcast(
-            PodcastId,
+            sanityPodcastId,
             userId
         );
         return res.status(result.status ? 200 : 400).send(result);
     };
 
     getSavedUsersForPodcast = async (req: Request, res: Response) => {
-        const PodcastId = Number(req.query.PodcastId);
+        const sanityPodcastId = req.query.sanityPodcastId as string;
         const userId = (req as any).user?.userId;
-        if (!PodcastId) {
+        if (!sanityPodcastId) {
             return res.status(400).send({
-                message: "PodcastId is required"
+                message: "sanityPodcastId is required"
             });
         }
 
@@ -233,7 +233,7 @@ class PodcastController {
         }
 
         const result = await podcastService.getSavedUsersForMyPodcast(
-            PodcastId,
+            sanityPodcastId,
             userId,
             req.query
         );

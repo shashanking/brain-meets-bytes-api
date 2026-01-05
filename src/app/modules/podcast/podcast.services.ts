@@ -107,7 +107,7 @@ class PodcastService {
             name: podcast.name,
             likeCount: podcast.likeCount,
             dislikeCount: podcast.dislikeCount,
-            PodcastId:podcast.PodcastId,
+            PodcastId: podcast.PodcastId,
             userReaction,
             usersWhoLiked: likedUsers.map(u => u.userId)
         };
@@ -205,102 +205,62 @@ class PodcastService {
         };
     }
 
-    async toggleSavePodcast(PodcastId: number, userId: number) {
+    async toggleSavePodcast(sanityPodcastId: string, userId: number) {
         const existing = await SavedPodcastModel.findOne({
-            PodcastId,
+            sanityPodcastId,
             userId
         });
         if (existing) {
-            await SavedPodcastModel.deleteOne({
-                PodcastId,
-                userId
-            });
-            return {
-                status: true,
-                message: "Podcast unsaved"
-            };
+            await SavedPodcastModel.deleteOne({ sanityPodcastId, userId });
+            return { status: true, message: "Podcast unsaved" };
         }
-        const podcastExists = await PodcastModel.exists({ PodcastId });
+        const podcastExists = await PodcastModel.exists({ sanityPodcastId });
         if (!podcastExists) {
-            return {
-                status: false,
-                message: "Podcast not found"
-            };
+            return { status: false, message: "Podcast not found" };
         }
-        await SavedPodcastModel.create({
-            PodcastId,
-            userId
-        });
-        return {
-            status: true,
-            message: "Podcast saved"
-        };
+        await SavedPodcastModel.create({ sanityPodcastId, userId });
+        return { status: true, message: "Podcast saved" };
     }
 
     async getMySavedPodcasts(userId: number, query: any) {
         const { page = 1, limit = 10 } = query;
         const skip = (Number(page) - 1) * Number(limit);
+
         const data = await SavedPodcastModel.aggregate([
-            {
-                $match: { userId }
-            },
+            { $match: { userId } },
+
             {
                 $lookup: {
                     from: "podcasts",
-                    localField: "PodcastId",
-                    foreignField: "PodcastId",
+                    localField: "sanityPodcastId",
+                    foreignField: "sanityPodcastId",
                     as: "podcast"
                 }
             },
             { $unwind: "$podcast" },
-            {
-                $lookup: {
-                    from: "podcastcomments",
-                    let: { podcastId: "$PodcastId" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: { $eq: ["$PodcastId", "$$podcastId"] }
-                            }
-                        },
-                        { $sort: { createdAt: 1 } },
-                        {
-                            $project: {
-                                _id: 0,
-                                CommentId: 1,
-                                userId: 1,
-                                comment: 1,
-                                parentCommentId: 1,
-                                level: 1,
-                                likeCount: 1,
-                                createdAt: 1
-                            }
-                        }
-                    ],
-                    as: "comments"
-                }
-            },
+
             { $sort: { createdAt: -1 } },
             { $skip: skip },
             { $limit: Number(limit) },
+
             {
                 $project: {
                     _id: 0,
-                    PodcastId: 1,
+                    sanityPodcastId: 1,
                     savedAt: "$createdAt",
                     podcast: {
-                        PodcastId: "$podcast.PodcastId",
-                        name: "$podcast.name",
                         sanityPodcastId: "$podcast.sanityPodcastId",
+                        name: "$podcast.name",
                         likeCount: "$podcast.likeCount",
                         dislikeCount: "$podcast.dislikeCount",
                         createdAt: "$podcast.createdAt"
-                    },
-                    comments: 1
+                    }
                 }
             }
         ]);
+
         const total = await SavedPodcastModel.countDocuments({ userId });
+
         return {
             status: true,
             message: "Saved podcasts fetched",
@@ -308,22 +268,25 @@ class PodcastService {
                 total,
                 page: Number(page),
                 limit: Number(limit),
-                totalPages: Math.ceil(total / limit)
+                totalPages: Math.ceil(total / Number(limit))
             },
             data
         };
     }
 
+
     async getSavedUsersForMyPodcast(
-        PodcastId: number,
+        sanityPodcastId: string,
         userId: number,
         query: any
     ) {
         const { page = 1, limit = 10 } = query;
         const skip = (Number(page) - 1) * Number(limit);
-        const podcast = await PodcastReactionModel.findOne({
-            PodcastId,
-            userId
+
+        // ✅ ownership check (CORRECT)
+        const podcast = await PodcastModel.findOne({
+            sanityPodcastId,
+            userId // creatorId / ownerId
         }).lean();
 
         if (!podcast) {
@@ -332,8 +295,9 @@ class PodcastService {
                 message: "Unauthorized: You are not the creator of this podcast"
             };
         }
+
         const data = await SavedPodcastModel.aggregate([
-            { $match: { PodcastId } },
+            { $match: { sanityPodcastId } },
 
             {
                 $lookup: {
@@ -348,6 +312,7 @@ class PodcastService {
             { $sort: { createdAt: -1 } },
             { $skip: skip },
             { $limit: Number(limit) },
+
             {
                 $project: {
                     _id: 0,
@@ -361,7 +326,9 @@ class PodcastService {
                 }
             }
         ]);
-        const total = await SavedPodcastModel.countDocuments({ PodcastId });
+
+        const total = await SavedPodcastModel.countDocuments({ sanityPodcastId });
+
         return {
             status: true,
             message: "Saved users fetched",
@@ -369,11 +336,12 @@ class PodcastService {
                 total,
                 page: Number(page),
                 limit: Number(limit),
-                totalPages: Math.ceil(total / limit)
+                totalPages: Math.ceil(total / Number(limit))
             },
             data
         };
     }
+
 
 }
 
