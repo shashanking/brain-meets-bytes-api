@@ -107,6 +107,7 @@ class PodcastService {
             name: podcast.name,
             likeCount: podcast.likeCount,
             dislikeCount: podcast.dislikeCount,
+            PodcastId:podcast.PodcastId,
             userReaction,
             usersWhoLiked: likedUsers.map(u => u.userId)
         };
