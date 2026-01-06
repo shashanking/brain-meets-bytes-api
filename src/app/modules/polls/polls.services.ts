@@ -80,20 +80,35 @@ class PollService {
             .lean();
 
         if (!polls.length) return [];
-
         const pollIds = polls.map(p => p.PollId);
-
         const options = await PollOptionModel.find(
             { PollId: { $in: pollIds } },
             { _id: 0 }
         ).lean();
+        const votes = await PollVoteModel.find(
+            { PollId: { $in: pollIds } },
+            { _id: 0 }
+        ).lean();
+        const voteMap: Record<number, Record<number, number[]>> = {};
+        for (const vote of votes) {
+            if (!voteMap[vote.PollId]) {
+                voteMap[vote.PollId] = {};
+            }
+            if (!voteMap[vote.PollId][vote.OptionId]) {
+                voteMap[vote.PollId][vote.OptionId] = [];
+            }
+            voteMap[vote.PollId][vote.OptionId].push(vote.userId);
+        }
         const optionMap: Record<number, any[]> = {};
-
         for (const opt of options) {
             if (!optionMap[opt.PollId]) {
                 optionMap[opt.PollId] = [];
             }
-            optionMap[opt.PollId].push(opt);
+            optionMap[opt.PollId].push({
+                ...opt,
+                votedUserIds:
+                    voteMap[opt.PollId]?.[opt.OptionId] || []
+            });
         }
         return polls.map(poll => ({
             ...poll,

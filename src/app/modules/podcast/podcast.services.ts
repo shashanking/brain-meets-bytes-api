@@ -289,12 +289,12 @@ class PodcastService {
             userId // creatorId / ownerId
         }).lean();
 
-        if (!podcast) {
-            return {
-                status: false,
-                message: "Unauthorized: You are not the creator of this podcast"
-            };
-        }
+        // if (!podcast) {
+        //     return {
+        //         status: false,
+        //         message: "Unauthorized: You are not the creator of this podcast"
+        //     };
+        // }
 
         const data = await SavedPodcastModel.aggregate([
             { $match: { sanityPodcastId } },
