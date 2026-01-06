@@ -274,7 +274,6 @@ class PodcastService {
         };
     }
 
-
     async getSavedUsersForMyPodcast(
         sanityPodcastId: string,
         userId: number,
@@ -282,11 +281,9 @@ class PodcastService {
     ) {
         const { page = 1, limit = 10 } = query;
         const skip = (Number(page) - 1) * Number(limit);
-
-        // ✅ ownership check (CORRECT)
         const podcast = await PodcastModel.findOne({
             sanityPodcastId,
-            userId // creatorId / ownerId
+            userId 
         }).lean();
 
         // if (!podcast) {
@@ -326,9 +323,7 @@ class PodcastService {
                 }
             }
         ]);
-
         const total = await SavedPodcastModel.countDocuments({ sanityPodcastId });
-
         return {
             status: true,
             message: "Saved users fetched",

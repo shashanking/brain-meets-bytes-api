@@ -43,26 +43,22 @@ class ArticleController {
         try {
             const { sanityArticleId } = req.query;
             const userId = (req as any).user?.userId;
-
             if (!sanityArticleId) {
                 return res.status(400).send({
                     status: false,
                     message: "sanityArticleId is required"
                 });
             }
-
             const result = await articleService.getArticleReactionStatus(
                 sanityArticleId as string,
                 userId
             );
-
             if (!result) {
                 return res.status(404).send({
                     status: false,
                     message: "No data found"
                 });
             }
-
             return res.status(200).send({
                 status: true,
                 data: result
@@ -196,6 +192,61 @@ class ArticleController {
             });
         }
     }
+
+    saveArticle = async (req: Request, res: Response) => {
+        const sanityArticleId = (req.body.sanityArticleId);
+        const userId = (req as any).user?.userId;
+        if (!sanityArticleId) {
+            return res.status(400).send({
+                message: "sanityArticleId is required"
+            });
+        }
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+        const result = await articleService.toggleSaveArticle(
+            sanityArticleId,
+            userId
+        );
+        return res.status(result.status ? 200 : 400).send(result);
+    };
+
+    getSavedUsersForArticle = async (req: Request, res: Response) => {
+        const sanityArticleId = req.query.sanityArticleId as string;
+        const userId = (req as any).user?.userId;
+        if (!sanityArticleId) {
+            return res.status(400).send({
+                message: "sanityArticleId is required"
+            });
+        }
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+        const result = await articleService.getSavedUsersForMyArticle(
+            sanityArticleId,
+            userId,
+            req.query
+        );
+        return res.status(result.status ? 200 : 403).send(result);
+    };
+
+    getMySavedArticle = async (req: Request, res: Response) => {
+        const userId = (req as any).user?.userId;
+        if (!userId) {
+            return res.status(401).send({
+                message: "Unauthorized"
+            });
+        }
+        const result = await articleService.getMySavedArticles(
+            userId,
+            req.query
+        );
+        return res.status(200).send(result);
+    };
 
 }
 

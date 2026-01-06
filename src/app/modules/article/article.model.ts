@@ -90,10 +90,6 @@ export const ArticleReactionModel = mongoose.model<IArticleReaction>(
   ArticleReactionSchema
 );
 
-/* =========================
-   PODCAST COMMENT
-========================= */
-
 export interface IArticleComment extends Document {
   CommentId: number;
   sanityArticleId: string;
@@ -163,7 +159,6 @@ const ArticleCommentSchema = new Schema<IArticleComment>(
   { timestamps: true }
 );
 
-// 🔢 Auto increment CommentId
 ArticleCommentSchema.pre<IArticleComment>("save", async function () {
   if (this.isNew) {
     const counter = await Counter.findByIdAndUpdate(
@@ -179,10 +174,6 @@ export const ArticleCommentModel = mongoose.model<IArticleComment>(
   "ArticleComment",
   ArticleCommentSchema
 );
-
-/* =========================
-   PODCAST COMMENT LIKE
-========================= */
 
 export interface IArticleCommentLike extends Document {
   CommentId: number;
@@ -208,7 +199,6 @@ const ArticleCommentLikeSchema = new Schema<IArticleCommentLike>(
   { timestamps: true }
 );
 
-// 🔐 One like per user per comment
 ArticleCommentLikeSchema.index(
   { CommentId: 1, userId: 1 },
   { unique: true }
@@ -219,3 +209,27 @@ export const ArticleCommentLikeModel =
     "ArticleCommentLike",
     ArticleCommentLikeSchema
   );
+  
+export interface ISavedArticle extends Document {
+  sanityArticleId: string;
+  userId: number;
+  createdAt: Date;
+}
+
+const SavedArticleSchema = new Schema<ISavedArticle>(
+  {
+    sanityArticleId: { type: String, required: true, index: true },
+    userId: { type: Number, required: true, index: true }
+  },
+  { timestamps: true }
+);
+
+SavedArticleSchema.index(
+  { sanityArticleId: 1, userId: 1 },
+  { unique: true }
+);
+
+export const SavedArticleModel = mongoose.model<ISavedArticle>(
+  "SavedArticles",
+  SavedArticleSchema
+);

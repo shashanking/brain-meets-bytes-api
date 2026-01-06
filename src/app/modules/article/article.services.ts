@@ -2,7 +2,8 @@ import {
     ArticleCommentLikeModel,
     ArticleCommentModel,
     ArticleModel,
-    ArticleReactionModel
+    ArticleReactionModel,
+    SavedArticleModel
 } from "./article.model";
 
 class ArticleService {
@@ -112,7 +113,6 @@ class ArticleService {
         };
     }
 
-
     async addArticleComment(
         sanityArticleId: string,
         userId: number,
@@ -201,6 +201,132 @@ class ArticleService {
             CommentId,
             likeCount: comment.likeCount,
             dislikeCount: comment.dislikeCount
+        };
+    }
+
+    async toggleSaveArticle(sanityArticleId: string, userId: number) {
+        const existing = await SavedArticleModel.findOne({
+            sanityArticleId,
+            userId
+        });
+        if (existing) {
+            await SavedArticleModel.deleteOne({ sanityArticleId, userId });
+            return { status: true, message: "Article unsaved" };
+        }
+        const articleExists = await ArticleModel.exists({ sanityArticleId });
+        if (!articleExists) {
+            return { status: false, message: "Article not found" };
+        }
+        await SavedArticleModel.create({ sanityArticleId, userId });
+        return { status: true, message: "Article saved" };
+    }
+
+    async getMySavedArticles(userId: number, query: any) {
+        const { page = 1, limit = 10 } = query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const data = await SavedArticleModel.aggregate([
+            { $match: { userId } },
+            {
+                $lookup: {
+                    from: "articles",
+                    localField: "sanityArticleId",
+                    foreignField: "sanityArticleId",
+                    as: "article"
+                }
+            },
+            { $unwind: "$article" },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+                $project: {
+                    _id: 0,
+                    sanityArticleId: 1,
+                    savedAt: "$createdAt",
+                    article: {
+                        sanityArticleId: "$article.sanityArticleId",
+                        name: "$article.name",
+                        likeCount: "$article.likeCount",
+                        dislikeCount: "$article.dislikeCount",
+                        createdAt: "$article.createdAt"
+                    }
+                }
+            }
+        ]);
+        const total = await SavedArticleModel.countDocuments({ userId });
+        return {
+            status: true,
+            message: "Saved articles fetched",
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / Number(limit))
+            },
+            data
+        };
+    }
+
+    async getSavedUsersForMyArticle(
+        sanityArticleId: string,
+        userId: number,
+        query: any
+    ) {
+        const { page = 1, limit = 10 } = query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const article = await ArticleModel.findOne({
+            sanityArticleId,
+            userId
+        }).lean();
+
+        // if (!article) {
+        //     return {
+        //         status: false,
+        //         message: "Unauthorized: You are not the creator of this article"
+        //     };
+        // }
+
+        const data = await SavedArticleModel.aggregate([
+            { $match: { sanityArticleId } },
+
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "userId",
+                    as: "savedBy"
+                }
+            },
+            { $unwind: "$savedBy" },
+
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+
+            {
+                $project: {
+                    _id: 0,
+                    savedAt: "$createdAt",
+                    savedBy: {
+                        userId: "$savedBy.userId",
+                        name: "$savedBy.name",
+                        email: "$savedBy.email",
+                        ProfilePic: "$savedBy.ProfilePic"
+                    }
+                }
+            }
+        ]);
+        const total = await SavedArticleModel.countDocuments({ sanityArticleId });
+        return {
+            status: true,
+            message: "Saved users fetched",
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages: Math.ceil(total / Number(limit))
+            },
+            data
         };
     }
 
