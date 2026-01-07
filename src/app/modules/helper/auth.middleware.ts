@@ -46,6 +46,7 @@ export const createAuthMiddleware = (
                 userId: payload.userId,
                 MembershipId: payload.MembershipId ?? null,
                 RoleId: payload.RoleId,
+                Rolename: payload.Rolename,
             };
 
             return next();
@@ -58,4 +59,13 @@ export const createAuthMiddleware = (
             });
         }
     };
+};
+
+export const adminOnly = (req: any, res: Response, next: NextFunction) => {
+    if (req.user?.Rolename !== "admin") {
+        return res.status(403).json({
+            message: "Access denied. Admins only."
+        });
+    }
+    next();
 };

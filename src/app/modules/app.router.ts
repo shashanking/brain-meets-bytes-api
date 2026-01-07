@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAuthMiddleware } from "./helper/auth.middleware";
+import { adminOnly, createAuthMiddleware } from "./helper/auth.middleware";
 import { AuthService } from "./helper/auth.services";
 import userRoutes from "./user/user.routes";
 import loginRoutes from "./login/login.routes";
@@ -18,7 +18,7 @@ const authMiddleware = createAuthMiddleware(authService);
 
 router.use("/users", userRoutes);
 router.use("/roles", authMiddleware, roleRoutes);
-router.use("/category", authMiddleware, categoryRoutes);
+router.use("/category", authMiddleware, adminOnly, categoryRoutes);
 router.use("/threads", authMiddleware, threadsRoutes);
 router.use("/topics", authMiddleware, topicsRoutes);
 router.use("/membership", authMiddleware, membershipRoutes);
