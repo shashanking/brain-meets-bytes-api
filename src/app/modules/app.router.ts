@@ -18,7 +18,7 @@ const authMiddleware = createAuthMiddleware(authService);
 
 router.use("/users", userRoutes);
 router.use("/roles", authMiddleware, roleRoutes);
-router.use("/category", authMiddleware, adminOnly, categoryRoutes);
+router.use("/category", authMiddleware,categoryRoutes);
 router.use("/threads", authMiddleware, threadsRoutes);
 router.use("/topics", authMiddleware, topicsRoutes);
 router.use("/membership", authMiddleware, membershipRoutes);

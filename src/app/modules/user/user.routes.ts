@@ -8,5 +8,6 @@ router.put("/", userController.updateUser.bind(userController));
 router.delete("/", userController.deleteUser.bind(userController));
 router.get("/", userController.getUsers.bind(userController));
 router.get("/one", userController.getUser.bind(userController));
+router.post("/forgotPassword", userController.forgotPassword.bind(userController));
 
 export default router;

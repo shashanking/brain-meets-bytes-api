@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { userService } from "./user.services";
 import { createHash } from "crypto";
+import { generateTempPassword, sendTempPasswordEmail } from "../helper/mail.services";
 
 class UserController {
 
@@ -143,6 +144,40 @@ class UserController {
             console.error("getUser error:", err);
             return res.status(500).send({
                 message: "Internal server error"
+            });
+        }
+    }
+
+    async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).send({
+                    message: "Email is required",
+                });
+            }
+
+            const user: any = await userService.findByEmail(email);
+
+            if (!user) {
+                return res.status(404).send({
+                    message: "User not found",
+                });
+            }
+            const tempPassword = generateTempPassword();
+            const hashedPassword = createHash("sha256")
+                .update(tempPassword)
+                .digest("hex");
+            await userService.updatePasswordByEmail(email, hashedPassword);
+            await sendTempPasswordEmail(email, tempPassword);
+            return res.status(200).send({
+                status: true,
+                message: "Temporary password sent to your email",
+            });
+        } catch (error: any) {
+            console.error("forgotPassword error:", error);
+            return res.status(500).send({
+                message: "Internal server error",
             });
         }
     }

@@ -215,8 +215,6 @@ class UserService {
         }
     }
 
-
-
     async getUserByUserId(userId: string) {
         try {
             if (!userId) {
@@ -249,6 +247,14 @@ class UserService {
             };
         }
     }
+
+    async updatePasswordByEmail(email: string, hashedPassword: string) {
+    return UserModel.updateOne(
+        { email },
+        { $set: { password: hashedPassword } }
+    );
+}
+
 }
 
 export const userService = new UserService();

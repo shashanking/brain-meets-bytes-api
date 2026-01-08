@@ -1,8 +1,7 @@
 // server.ts
 import dotenv from "dotenv";
 dotenv.config();
-
-import express, { Application, Request, Response, NextFunction } from "express";
+import express, { Application, Request, Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
 import morgan from "morgan";
@@ -13,6 +12,7 @@ import swaggerJsDoc from "swagger-jsdoc";
 import mongoose from "mongoose";
 import config from "./src/app/config/config";
 import apiRouter from "./src/app/modules/app.router";
+
 const swaggerOptions: any = {
   definition: {
     openapi: "3.0.0",
@@ -31,24 +31,25 @@ const swaggerOptions: any = {
 };
 const specs = swaggerJsDoc(swaggerOptions);
 const app: Application = express();
+app.use(
+  cors({
+    origin: [
+      "https://brain-meets-bytes.vercel.app",
+      "http://localhost:3000"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "token"],
+    credentials: true
+  })
+);
+app.options("*", cors());
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
 app.use(fileUpload());
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 app.use(bodyParser.json({ limit: "50mb" }));
-app.use(cors());
 app.use(morgan("dev"));
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With,Content-Type,token");
-  res.header("Access-Control-Max-Age", "600");
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
-
 app.set("view engine", "jade");
 app.use(express.static(path.join(__dirname, "public")));
-
 app.get("/", (req: Request, res: Response) => {
   res.send("Backend running successfully!");
 });
@@ -69,12 +70,14 @@ async function connectDB() {
     process.exit(1);
   }
 }
+
 const start = async () => {
   await connectDB();
-  app.listen(config.serverPort,"0.0.0.0",() => {
+  app.listen(config.serverPort, "0.0.0.0", () => {
     console.log("Server is listening on port", config.serverPort);
   });
 };
+
 start().catch((err) => {
   console.error("Fatal error on startup:", err);
   process.exit(1);
