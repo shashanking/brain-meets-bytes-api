@@ -187,22 +187,32 @@ class ArticleService {
         ).sort({ createdAt: 1 });
     }
 
-    async getArticleCommentReactionCount(CommentId: number) {
-        const comment = await ArticleCommentModel.findOne(
-            { CommentId },
-            { _id: 0, CommentId: 1, likeCount: 1, dislikeCount: 1 }
-        );
-
-        if (!comment) {
-            return null;
+async getArticleCommentReactionCount(CommentId: number) {
+    const comment = await ArticleCommentModel.findOne(
+        { CommentId },
+        {
+            _id: 0,
+            CommentId: 1,
+            likeCount: 1,
+            dislikeCount: 1
         }
+    ).lean();
 
-        return {
-            CommentId,
-            likeCount: comment.likeCount,
-            dislikeCount: comment.dislikeCount
-        };
-    }
+    if (!comment) return null;
+
+    // 2️⃣ Get users who liked the comment
+    const likedUsers = await ArticleCommentLikeModel.find(
+        { CommentId },
+        { _id: 0, userId: 1 }
+    ).lean();
+
+    return {
+        CommentId: comment.CommentId,
+        likeCount: comment.likeCount,
+        dislikeCount: comment.dislikeCount,
+        likedUsers: likedUsers.map(l => l.userId)
+    };
+}
 
     async toggleSaveArticle(sanityArticleId: string, userId: number) {
         const existing = await SavedArticleModel.findOne({

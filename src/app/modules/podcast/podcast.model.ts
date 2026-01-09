@@ -103,9 +103,21 @@ export interface IPodcastComment extends Document {
 
   likeCount: number;
   dislikeCount: number;
+
+  likedBy: {
+    userId: number;
+    createdAt: Date;
+  }[];
+
+  dislikedBy: {
+    userId: number;
+    createdAt: Date;
+  }[];
+
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 const PodcastCommentSchema = new Schema<IPodcastComment>(
   {
@@ -153,7 +165,20 @@ const PodcastCommentSchema = new Schema<IPodcastComment>(
     dislikeCount: {
       type: Number,
       default: 0
-    }
+    },
+    likedBy: [
+      {
+        userId: Number,
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
+
+    dislikedBy: [
+      {
+        userId: Number,
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
 
   },
   { timestamps: true }

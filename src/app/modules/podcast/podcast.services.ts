@@ -188,22 +188,33 @@ class PodcastService {
         ).sort({ createdAt: 1 });
     }
 
-    async getPodcastCommentReactionCount(CommentId: number) {
-        const comment = await PodcastCommentModel.findOne(
-            { CommentId },
-            { _id: 0, CommentId: 1, likeCount: 1, dislikeCount: 1 }
-        );
-
-        if (!comment) {
-            return null;
+async getPodcastCommentReactionCount(CommentId: number) {
+    const comment = await PodcastCommentModel.findOne(
+        { CommentId },
+        {
+            _id: 0,
+            CommentId: 1,
+            likeCount: 1,
+            dislikeCount: 1
         }
+    ).lean();
 
-        return {
-            CommentId,
-            likeCount: comment.likeCount,
-            dislikeCount: comment.dislikeCount
-        };
-    }
+    if (!comment) return null;
+
+    // 2️⃣ Get users who liked the comment
+    const likedUsers = await PodcastCommentLikeModel.find(
+        { CommentId },
+        { _id: 0, userId: 1 }
+    ).lean();
+
+    return {
+        CommentId: comment.CommentId,
+        likeCount: comment.likeCount,
+        dislikeCount: comment.dislikeCount,
+        likedUsers: likedUsers.map(l => l.userId)
+    };
+}
+
 
     async toggleSavePodcast(sanityPodcastId: string, userId: number) {
         const existing = await SavedPodcastModel.findOne({
@@ -283,7 +294,7 @@ class PodcastService {
         const skip = (Number(page) - 1) * Number(limit);
         const podcast = await PodcastModel.findOne({
             sanityPodcastId,
-            userId 
+            userId
         }).lean();
 
         // if (!podcast) {
